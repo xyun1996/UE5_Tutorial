@@ -37,39 +37,39 @@ enum ELifetimeCondition
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────┬──────────────────────────────────────────────────┐
-│      条件         │              详细说明与使用场景                   │
+│      条件        │              详细说明与使用场景                    │
 ├──────────────────┼──────────────────────────────────────────────────┤
-│ COND_None        │ 默认行为，复制给所有客户端                        │
-│                  │ 适用：公共游戏状态、分数、全局事件                 │
+│ COND_None        │ 默认行为，复制给所有客户端                         │
+│                  │ 适用：公共游戏状态、分数、全局事件                  │
 │                  │                                                  │
-│ 示例: DOREPLIFETIME(AActor, Score)               │
+│ 示例: DOREPLIFETIME(AActor, Score)                                  │
 ├──────────────────┼──────────────────────────────────────────────────┤
-│ COND_InitialOnly │ 只在Actor首次复制到客户端时同步                   │
-│                  │ 之后属性变化不会再复制                            │
-│                  │ 适用：出生点、初始配置、角色类型                  │
+│ COND_InitialOnly │ 只在Actor首次复制到客户端时同步                    │
+│                  │ 之后属性变化不会再复制                             │
+│                  │ 适用：出生点、初始配置、角色类型                    │
 │                  │                                                  │
-│ 示例: DOREPLIFETIME_CONDITION(AActor, SpawnPoint, COND_InitialOnly)│
+│ 示例: DOREPLIFETIME_CONDITION(AActor, SpawnPoint, COND_InitialOnly) │
 ├──────────────────┼──────────────────────────────────────────────────┤
-│ COND_OwnerOnly   │ 只有拥有该Actor的客户端才会收到                  │
+│ COND_OwnerOnly   │ 只有拥有该Actor的客户端才会收到                    │
 │                  │ 需要Actor有NetOwner                              │
-│                  │ 适用：私有状态、本地UI数据、弹药数                │
+│                  │ 适用：私有状态、本地UI数据、弹药数                  │
 │                  │                                                  │
-│ 示例: DOREPLIFETIME_CONDITION(AActor, AmmoCount, COND_OwnerOnly)   │
+│ 示例: DOREPLIFETIME_CONDITION(AActor, AmmoCount, COND_OwnerOnly)    │
 ├──────────────────┼──────────────────────────────────────────────────┤
-│ COND_SkipOwner   │ 所有客户端都能收到，除了所有者                   │
-│                  │ 适用：其他玩家看到的效果、外观                    │
+│ COND_SkipOwner   │ 所有客户端都能收到，除了所有者                      │
+│                  │ 适用：其他玩家看到的效果、外观                      │
 │                  │                                                  │
-│ 示例: DOREPLIFETIME_CONDITION(AActor, bIsCrouching, COND_SkipOwner)│
+│ 示例: DOREPLIFETIME_CONDITION(AActor, bIsCrouching, COND_SkipOwner) │
 ├──────────────────┼──────────────────────────────────────────────────┤
 │ COND_Simulated   │ 只复制给Role为SimulatedProxy的客户端              │
 │ Only             │ 不复制给AutonomousProxy                          │
-│                  │ 适用：其他玩家的位置更新                          │
+│                  │ 适用：其他玩家的位置更新                           │
 │                  │                                                  │
-│ 示例: DOREPLIFETIME_CONDITION(AActor, Location, COND_SimulatedOnly)│
+│ 示例: DOREPLIFETIME_CONDITION(AActor, Location, COND_SimulatedOnly) │
 ├──────────────────┼──────────────────────────────────────────────────┤
-│ COND_Autonomous  │ 只复制给Role为AutonomousProxy的客户端             │
-│ Only             │ 通常是玩家控制的Pawn                             │
-│                  │ 适用：玩家自己的预测状态                          │
+│ COND_Autonomous  │ 只复制给Role为AutonomousProxy的客户端              │
+│ Only             │ 通常是玩家控制的Pawn                               │
+│                  │ 适用：玩家自己的预测状态                           │
 │                  │                                                  │
 │ 示例: DOREPLIFETIME_CONDITION(AActor, PredictedPos, COND_AutonomousOnly)│
 └──────────────────┴──────────────────────────────────────────────────┘
@@ -927,11 +927,12 @@ void AMyPlayerCharacter::ServerSwitchWeapon_Implementation(int32 NewIndex)
 **第七课：RPC远程过程调用**
 
 将深入讲解：
+
 - RPC类型与使用规则
 - 可靠性选择
 - RPC验证与安全
 
 ---
 
-*上一课: [第五课：属性复制详解](./Lesson05_PropertyReplication.md)*
-*下一课: [第七课：RPC远程过程调用](./Lesson07_RPC.md)*
+_上一课: [第五课：属性复制详解](./Lesson05_PropertyReplication.md)_
+_下一课: [第七课：RPC远程过程调用](./Lesson07_RPC.md)_

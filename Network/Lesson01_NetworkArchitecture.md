@@ -12,40 +12,35 @@
 
 UnrealEngine采用经典的**客户端-服务器模型**：
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         服务器 (Server)                          │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                      UNetDriver                              ││
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           ││
-│  │  │UNetConnection│ │UNetConnection│ │UNetConnection│ ...      ││
-│  │  │  (玩家1)     │ │  (玩家2)     │ │  (玩家3)     │           ││
-│  │  └─────────────┘ └─────────────┘ └─────────────┘           ││
-│  └─────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │ 网络数据包
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                         客户端 (Client)                          │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                      UNetDriver                              ││
-│  │  ┌─────────────────────────────────────────────────────────┐││
-│  │  │              UNetConnection (单个)                       │││
-│  │  │                 连接到服务器                              │││
-│  │  └─────────────────────────────────────────────────────────┘││
-│  └─────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Server["服务器 (Server)"]
+        Driver1["UNetDriver"]
+        Conn1["UNetConnection (玩家1)"]
+        Conn2["UNetConnection (玩家2)"]
+        Conn3["UNetConnection (玩家3)"]
+        Driver1 --> Conn1
+        Driver1 --> Conn2
+        Driver1 --> Conn3
+    end
+
+    subgraph Client["客户端 (Client)"]
+        Driver2["UNetDriver"]
+        Conn4["UNetConnection (单个)"]
+        Driver2 --> Conn4
+    end
+
+    Server <-->|"网络数据包"| Client
 ```
 
 ### 1.2 关键特点
 
-| 特点 | 说明 |
-|-----|------|
-| **服务器权威** | 服务器拥有游戏状态的最终决定权 |
-| **状态复制** | 服务器将状态变化同步给客户端 |
-| **RPC调用** | 客户端通过RPC请求服务器执行操作 |
-| **预测机制** | 客户端可预测执行，减少延迟感 |
+| 特点           | 说明                            |
+| -------------- | ------------------------------- |
+| **服务器权威** | 服务器拥有游戏状态的最终决定权  |
+| **状态复制**   | 服务器将状态变化同步给客户端    |
+| **RPC调用**    | 客户端通过RPC请求服务器执行操作 |
+| **预测机制**   | 客户端可预测执行，减少延迟感    |
 
 ---
 
@@ -110,13 +105,13 @@ Engine/Source/Runtime/
 
 以下文件是理解UE网络系统的核心：
 
-| 文件 | 说明 | 重要性 |
-|-----|------|--------|
-| `Engine/Classes/Engine/NetDriver.h` | 包含详细的架构注释，是网络系统的入口 | ★★★★★ |
-| `Engine/Classes/Engine/NetConnection.h` | 连接管理，数据包处理 | ★★★★★ |
-| `Engine/Classes/Engine/Channel.h` | 通道基类，数据传输 | ★★★★ |
-| `Engine/Classes/Engine/ActorChannel.h` | Actor复制核心 | ★★★★★ |
-| `Engine/Public/Net/UnrealNetwork.h` | 复制宏定义 | ★★★★★ |
+| 文件                                    | 说明                                 | 重要性 |
+| --------------------------------------- | ------------------------------------ | ------ |
+| `Engine/Classes/Engine/NetDriver.h`     | 包含详细的架构注释，是网络系统的入口 | ★★★★★  |
+| `Engine/Classes/Engine/NetConnection.h` | 连接管理，数据包处理                 | ★★★★★  |
+| `Engine/Classes/Engine/Channel.h`       | 通道基类，数据传输                   | ★★★★   |
+| `Engine/Classes/Engine/ActorChannel.h`  | Actor复制核心                        | ★★★★★  |
+| `Engine/Public/Net/UnrealNetwork.h`     | 复制宏定义                           | ★★★★★  |
 
 > **提示**: `NetDriver.h` 文件头部有约300行的详细注释，解释了整个网络架构，建议仔细阅读。
 
@@ -126,16 +121,17 @@ Engine/Source/Runtime/
 
 ### 3.1 类层次结构
 
-```
-                    UObject
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-      UNetDriver   UNetConnection  UChannel
-          │            │            │
-    ┌─────┴─────┐      │      ┌─────┴─────┐
-    │           │      │      │           │
-UIpNetDriver DemoNetDriver  UActorChannel UControlChannel
+```mermaid
+graph TB
+    UObject --> UNetDriver
+    UObject --> UNetConnection
+    UObject --> UChannel
+
+    UNetDriver --> UIpNetDriver
+    UNetDriver --> UDemoNetDriver
+
+    UChannel --> UActorChannel
+    UChannel --> UControlChannel
 ```
 
 ### 3.2 核心类职责
@@ -149,6 +145,7 @@ class UNetDriver : public UObject, public FExec
 ```
 
 **职责**:
+
 - 管理所有网络连接的顶层类
 - 服务器端：管理所有客户端连接
 - 客户端：管理到服务器的单个连接
@@ -182,11 +179,11 @@ class UNetDriver : public UObject, public FExec
 
 **主要NetDriver类型**:
 
-| 类型 | 用途 |
-|-----|------|
-| `UIpNetDriver` | 基于IP的标准网络驱动（默认） |
-| `UDemoNetDriver` | 回放录制/播放驱动 |
-| 自定义NetDriver | 游戏可自定义实现 |
+| 类型             | 用途                         |
+| ---------------- | ---------------------------- |
+| `UIpNetDriver`   | 基于IP的标准网络驱动（默认） |
+| `UDemoNetDriver` | 回放录制/播放驱动            |
+| 自定义NetDriver  | 游戏可自定义实现             |
 
 ---
 
@@ -195,6 +192,7 @@ class UNetDriver : public UObject, public FExec
 **位置**: `Engine/Classes/Engine/NetConnection.h`
 
 **职责**:
+
 - 表示单个网络连接
 - 管理该连接的所有Channel
 - 处理数据包的组装和拆解
@@ -245,6 +243,7 @@ class UNetConnection
 **位置**: `Engine/Classes/Engine/Channel.h:62`
 
 **职责**:
+
 - 数据传输通道的基类
 - 处理可靠/不可靠数据传输
 - 管理数据束(DataBunch)的序列化
@@ -293,47 +292,35 @@ class UChannel : public UObject
 
 ### 3.3 类关系图
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                            UNetDriver                                │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ - ClientConnections: TArray<UNetConnection*>                  │  │
-│  │ - ServerConnection: UNetConnection* (客户端)                  │  │
-│  │ - Socket: FSocket*                                            │  │
-│  │ - ReplicationDriver: UReplicationDriver*                      │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ 拥有
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                          UNetConnection                              │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ - Driver: UNetDriver*                                         │  │
-│  │ - Channels: TArray<UChannel*>                                 │  │
-│  │ - PackageMap: UPackageMapClient*                              │  │
-│  │ - State: EConnectionState                                     │  │
-│  │ - RemoteAddr: FInternetAddr                                   │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ 拥有
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                             UChannel                                 │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ - Connection: UNetConnection*                                 │  │
-│  │ - ChIndex: int32                                              │  │
-│  │ - InRec / OutRec (可靠数据缓存)                               │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-          │                    │                    │
-          │ 派生                │ 派生                │ 派生
-          ▼                    ▼                    ▼
-    ┌───────────┐        ┌───────────┐        ┌───────────┐
-    │UControl   │        │UActor     │        │UVoice     │
-    │Channel    │        │Channel    │        │Channel    │
-    └───────────┘        └───────────┘        └───────────┘
+```mermaid
+graph TB
+    subgraph NetDriver["UNetDriver"]
+        D1["ClientConnections: TArray&lt;UNetConnection*&gt;"]
+        D2["ServerConnection: UNetConnection*"]
+        D3["Socket: FSocket*"]
+        D4["ReplicationDriver: UReplicationDriver*"]
+    end
+
+    subgraph NetConnection["UNetConnection"]
+        C1["Driver: UNetDriver*"]
+        C2["Channels: TArray&lt;UChannel*&gt;"]
+        C3["PackageMap: UPackageMapClient*"]
+        C4["State: EConnectionState"]
+        C5["RemoteAddr: FInternetAddr"]
+    end
+
+    subgraph Channel["UChannel"]
+        Ch1["Connection: UNetConnection*"]
+        Ch2["ChIndex: int32"]
+        Ch3["InRec / OutRec"]
+    end
+
+    NetDriver -->|"拥有"| NetConnection
+    NetConnection -->|"拥有"| Channel
+
+    Channel --> UControlChannel
+    Channel --> UActorChannel
+    Channel --> UVoiceChannel
 ```
 
 ---
@@ -344,25 +331,13 @@ class UChannel : public UObject
 
 UNetDriver的主要Tick流程分为两个阶段：
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Engine Tick                                  │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┴───────────────┐
-                    ▼                               ▼
-        ┌───────────────────────┐       ┌───────────────────────┐
-        │    TickDispatch()     │       │      TickFlush()      │
-        │    (接收数据)          │       │      (发送数据)        │
-        └───────────────────────┘       └───────────────────────┘
-                    │                               │
-                    ▼                               ▼
-        ┌───────────────────────┐       ┌───────────────────────┐
-        │ - 接收网络数据包       │       │ - 复制Actors          │
-        │ - 解析数据包           │       │ - 发送RPC             │
-        │ - 分发到对应Connection │       │ - 组装并发送数据包     │
-        │ - 处理连接握手         │       │ - 处理可靠性确认       │
-        └───────────────────────┘       └───────────────────────┘
+```mermaid
+flowchart TD
+    A["Engine Tick"] --> B["TickDispatch()<br/>(接收数据)"]
+    A --> C["TickFlush()<br/>(发送数据)"]
+
+    B --> D["- 接收网络数据包<br/>- 解析数据包<br/>- 分发到对应Connection<br/>- 处理连接握手"]
+    C --> E["- 复制Actors<br/>- 发送RPC<br/>- 组装并发送数据包<br/>- 处理可靠性确认"]
 ```
 
 ### 4.2 TickDispatch (接收阶段)
@@ -422,30 +397,24 @@ virtual void TickFlush(float DeltaSeconds);
 
 根据源码注释 (NetDriver.h:211-222)：
 
-```
-客户端                                服务器
-  │                                    │
-  │ 1. 调用 Server_RPC()               │
-  │    ↓                               │
-  │ 2. 转发到ActorChannel              │
-  │    ↓                               │
-  │ 3. 序列化RPC ID和参数到Bunch       │
-  │    ↓                               │
-  │ 4. NetConnection组装Bunch到Packet  │
-  │    ↓                               │
-  │ ─────── 发送Packet ─────────────→  │
-  │                                    │ 5. NetDriver接收Packet
-  │                                    │    ↓
-  │                                    │ 6. 根据地址找到NetConnection
-  │                                    │    ↓
-  │                                    │ 7. 拆解Packet为Bunch
-  │                                    │    ↓
-  │                                    │ 8. 根据Channel ID路由到ActorChannel
-  │                                    │    ↓
-  │                                    │ 9. 解析RPC ID和参数
-  │                                    │    ↓
-  │                                    │ 10. 调用Actor上的函数
-  │                                    │
+```mermaid
+sequenceDiagram
+    participant Client as 客户端
+    participant Network as 网络
+    participant Server as 服务器
+
+    Client->>Client: 1. 调用 Server_RPC()
+    Client->>Client: 2. 转发到ActorChannel
+    Client->>Client: 3. 序列化RPC ID和参数到Bunch
+    Client->>Client: 4. NetConnection组装Bunch到Packet
+    Client->>Network: 发送Packet
+    Network->>Server: 接收Packet
+    Server->>Server: 5. NetDriver接收Packet
+    Server->>Server: 6. 根据地址找到NetConnection
+    Server->>Server: 7. 拆解Packet为Bunch
+    Server->>Server: 8. 根据Channel ID路由到ActorChannel
+    Server->>Server: 9. 解析RPC ID和参数
+    Server->>Server: 10. 调用Actor上的函数
 ```
 
 ---
@@ -456,19 +425,21 @@ virtual void TickFlush(float DeltaSeconds);
 
 根据源码注释 (NetDriver.h:194-209)：
 
-| 概念 | 说明 | 传输层级 |
-|-----|------|---------|
+| 概念       | 说明                          | 传输层级 |
+| ---------- | ----------------------------- | -------- |
 | **Packet** | NetConnection之间传输的数据块 | 连接级别 |
-| **Bunch** | Channel之间传输的数据块 | 通道级别 |
+| **Bunch**  | Channel之间传输的数据块       | 通道级别 |
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                            Packet                                    │
-│  ┌──────────────┬──────────────┬──────────────┬──────────────┐     │
-│  │   Header     │    Bunch 1   │    Bunch 2   │    Bunch 3   │ ... │
-│  │  (元数据)     │   (Actor A)  │   (Actor B)  │   (RPC)      │     │
-│  └──────────────┴──────────────┴──────────────┴──────────────┘     │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    subgraph Packet["Packet"]
+        H["Header<br/>(元数据)"]
+        B1["Bunch 1<br/>(Actor A)"]
+        B2["Bunch 2<br/>(Actor B)"]
+        B3["Bunch 3<br/>(RPC)"]
+    end
+
+    H --> B1 --> B2 --> B3
 ```
 
 ### 5.2 大数据处理 - Partial Bunch
@@ -487,18 +458,17 @@ enum EBunchFlags
 
 **流程**:
 
-```
-发送端                              接收端
-  │                                   │
-  │ 大Bunch                           │
-  │    ↓                              │
-  │ 分割为多个Partial Bunch            │
-  │    ↓                              │
-  │ ── PartialInitial ────────────→   │ 开始重组
-  │ ── Partial ──────────────────→    │ 继续重组
-  │ ── PartialFinal ─────────────→    │ 完成重组
-  │                                   │    ↓
-  │                                   │ 处理完整Bunch
+```mermaid
+sequenceDiagram
+    participant Sender as 发送端
+    participant Receiver as 接收端
+
+    Note over Sender: 大Bunch需要分割
+    Sender->>Receiver: PartialInitial (第1部分)
+    Sender->>Receiver: Partial (第2部分)
+    Sender->>Receiver: PartialFinal (最后部分)
+
+    Receiver->>Receiver: 重组并处理完整Bunch
 ```
 
 ---
@@ -562,30 +532,27 @@ Bunch Number: 每个Channel一个，仅对可靠Bunch递增
 
 根据源码注释 (NetDriver.h:137-155)：
 
-```
-客户端                                服务器
-  │                                    │
-  │ ───── NMT_Hello ────────────────→ │
-  │                                    │ ← UWorld::NotifyControlMessage
-  │ ←──── NMT_Challenge ────────────   │
-  │                                    │
-  │ UPendingNetGame::                  │
-  │ NotifyControlMessage               │
-  │    ↓                               │
-  │ ───── NMT_Login ────────────────→ │
-  │                                    │ ← 验证Challenge
-  │                                    │ ← AGameModeBase::PreLogin
-  │                                    │
-  │ ←──── NMT_Welcome ─────────────   │ ← UWorld::WelcomePlayer
-  │      (包含地图信息)                 │
-  │                                    │
-  │ 读取地图信息，准备加载              │
-  │    ↓                               │
-  │ ───── NMT_NetSpeed ─────────────→ │
-  │                                    │ ← 调整连接网速
-  │                                    │
-  │         握手完成，开始游戏          │
-  │                                    │
+```mermaid
+sequenceDiagram
+    participant Client as 客户端
+    participant Server as 服务器
+
+    Client->>Server: NMT_Hello
+    Note right of Server: UWorld::NotifyControlMessage
+    Server->>Client: NMT_Challenge
+
+    Note over Client: UPendingNetGame::NotifyControlMessage
+    Client->>Server: NMT_Login
+    Note right of Server: 验证Challenge<br/>AGameModeBase::PreLogin
+
+    Server->>Client: NMT_Welcome (包含地图信息)
+    Note right of Server: UWorld::WelcomePlayer
+
+    Note over Client: 读取地图信息，准备加载
+    Client->>Server: NMT_NetSpeed
+    Note right of Server: 调整连接网速
+
+    Note over Client,Server: 握手完成，开始游戏
 ```
 
 ### 7.2 控制消息类型
@@ -620,6 +587,7 @@ NMT_GameSpeed      // 游戏速度
 **第二课：网络驱动与连接管理**
 
 将深入讲解：
+
 - UNetDriver的初始化和配置
 - UNetConnection的详细实现
 - UIpNetDriver的工作原理
@@ -632,12 +600,14 @@ NMT_GameSpeed      // 游戏速度
 ### 练习1：阅读源码
 
 阅读 `Engine/Classes/Engine/NetDriver.h` 头部注释（第31-321行），回答以下问题：
+
 1. 为什么UE不在Packet级别实现可靠传输？
 2. Partial Bunch机制解决了什么问题？
 
 ### 练习2：追踪代码
 
 使用IDE或代码编辑器，追踪以下函数调用链：
+
 ```
 UNetDriver::TickDispatch → UNetConnection::ReceivedRawPacket → UChannel::ReceivedRawBunch
 ```
@@ -645,6 +615,7 @@ UNetDriver::TickDispatch → UNetConnection::ReceivedRawPacket → UChannel::Rec
 ### 练习3：绘制图表
 
 根据本文内容，绘制一份完整的网络数据流图，包含：
+
 - 客户端到服务器的RPC调用
 - 服务器到客户端的属性复制
 - ACK/NAK的往返过程
@@ -663,4 +634,4 @@ UNetDriver::TickDispatch → UNetConnection::ReceivedRawPacket → UChannel::Rec
 
 ---
 
-*下一课: [第二课：网络驱动与连接管理](./Lesson02_NetDriverAndConnection.md)*
+_下一课: [第二课：网络驱动与连接管理](./Lesson02_NetDriverAndConnection.md)_

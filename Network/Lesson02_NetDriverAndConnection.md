@@ -22,6 +22,7 @@ class UNetDriver : public UObject, public FExec
 ```
 
 **关键特点**:
+
 - `Abstract`: 抽象类，不能直接实例化
 - `config=Engine`: 配置从Engine.ini读取
 - 继承自 `FExec`: 支持控制台命令处理
@@ -147,27 +148,19 @@ public:
 
 ### 1.4 NetDriver类型
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          UNetDriver                                  │
-│                         (抽象基类)                                    │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┴───────────────┐
-                    │                               │
-                    ▼                               ▼
-        ┌───────────────────────┐       ┌───────────────────────┐
-        │     UIpNetDriver      │       │    UDemoNetDriver     │
-        │   (基于IP的网络驱动)   │       │   (回放录制/播放)      │
-        └───────────────────────┘       └───────────────────────┘
+```mermaid
+graph TB
+    A["UNetDriver<br/>(抽象基类)"]
+    A --> B["UIpNetDriver<br/>(基于IP的网络驱动)"]
+    A --> C["UDemoNetDriver<br/>(回放录制/播放)"]
 ```
 
-| NetDriver类型 | 用途 | 场景 |
-|--------------|------|------|
-| `UIpNetDriver` | 标准IP网络通信 | 游戏主要网络流量 |
-| `UDemoNetDriver` | 回放系统 | 录制/播放游戏回放 |
-| `UWebSocketNetDriver` | WebSocket通信 | Web平台或特殊需求 |
-| 自定义NetDriver | 游戏特定需求 | 可扩展实现 |
+| NetDriver类型         | 用途           | 场景              |
+| --------------------- | -------------- | ----------------- |
+| `UIpNetDriver`        | 标准IP网络通信 | 游戏主要网络流量  |
+| `UDemoNetDriver`      | 回放系统       | 录制/播放游戏回放 |
+| `UWebSocketNetDriver` | WebSocket通信  | Web平台或特殊需求 |
+| 自定义NetDriver       | 游戏特定需求   | 可扩展实现        |
 
 ---
 
@@ -316,6 +309,7 @@ class UNetConnection : public UPlayer
 ```
 
 **关键特点**:
+
 - 继承自 `UPlayer`: 代表一个玩家连接
 - `Abstract`: 抽象基类
 - 管理该连接的所有通道和数据传输
@@ -481,6 +475,7 @@ virtual void TickDispatch(float DeltaTime);
 ```
 
 **核心职责**:
+
 1. 从Socket接收数据包
 2. 分发数据包到对应连接
 3. 处理新连接握手
@@ -498,7 +493,7 @@ TickDispatch(DeltaTime)
         │
         ▼
 ┌───────────────────────────────────────────┐
-│         接收数据包循环                      │
+│         接收数据包循环                     │
 │                                           │
 │   Socket->RecvFrom(Data, Count, Addr)     │
 │           │                               │
@@ -529,6 +524,7 @@ virtual void TickFlush(float DeltaSeconds);
 ```
 
 **核心职责**:
+
 1. 复制Actors (服务器)
 2. 发送RPC
 3. 组装并发送数据包
@@ -639,58 +635,44 @@ namespace EClientLoginState
 
 ### 5.2 完整连接生命周期
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      客户端连接生命周期                               │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant Server as 服务器
+    participant Client as 客户端
 
-服务器                                          客户端
-  │                                               │
-  │  1. 服务器启动                                │
-  │     UWorld::Listen()                         │
-  │     └── NetDriver::InitListen()              │
-  │                                               │
-  │                                               │  2. 客户端发起连接
-  │                                               │     UPendingNetGame::InitNetDriver()
-  │                                               │     └── NetDriver::InitConnect()
-  │                                               │         └── 创建 ServerConnection
-  │                                               │             State = USOCK_Pending
-  │                                               │
-  │  3. 收到握手包                                │
-  │     StatelessHandshake                       │
-  │     └── 创建新 UNetConnection                │
-  │         State = USOCK_Pending                │
-  │                                               │
-  │◄─────────── NMT_Hello ──────────────────────│  4. 发送Hello
-  │                                               │
-  │  5. 发送Challenge                             │
-  │  ─────────── NMT_Challenge ─────────────────►│
-  │                                               │  6. 响应Challenge
-  │◄─────────── NMT_Login ──────────────────────│
-  │                                               │
-  │  7. 验证登录                                  │
-  │     AGameModeBase::PreLogin()                │
-  │                                               │
-  │  8. 发送Welcome                               │
-  │  ─────────── NMT_Welcome ───────────────────►│
-  │                                               │  9. 加载地图
-  │                                               │
-  │◄─────────── NMT_NetSpeed ───────────────────│  10. 设置网速
-  │                                               │
-  │  11. 连接建立                                 │  11. 连接建立
-  │      State = USOCK_Open                      │      State = USOCK_Open
-  │      ClientLoginState = ReceivedJoin         │
-  │                                               │
-  │          === 正常游戏通信 ===                  │
-  │                                               │
-  │  12. 开始关闭                                  │
-  │      State = USOCK_Closing                   │
-  │      等待可靠数据确认                          │
-  │                                               │
-  │  13. 连接关闭                                  │  13. 连接关闭
-  │      State = USOCK_Closed                    │      State = USOCK_Closed
-  │      清理资源                                  │      清理资源
-  │                                               │
+    Note over Server: 1. 服务器启动
+    Note over Server: UWorld::Listen()
+    Note over Server: NetDriver::InitListen()
+
+    Note over Client: 2. 客户端发起连接
+    Note over Client: UPendingNetGame::InitNetDriver()
+    Note over Client: State = USOCK_Pending
+
+    Note over Server: 3. 收到握手包
+    Note over Server: 创建新 UNetConnection
+    Note over Server: State = USOCK_Pending
+
+    Client->>Server: 4. NMT_Hello
+    Server->>Client: 5. NMT_Challenge
+    Client->>Server: 6. NMT_Login (响应Challenge)
+
+    Note over Server: 7. 验证登录
+    Note over Server: AGameModeBase::PreLogin()
+
+    Server->>Client: 8. NMT_Welcome
+    Note over Client: 9. 加载地图
+    Client->>Server: 10. NMT_NetSpeed
+
+    Note over Server,Client: 11. 连接建立
+    Note over Server,Client: State = USOCK_Open
+
+    Note over Server,Client: === 正常游戏通信 ===
+
+    Note over Server: 12. 开始关闭
+    Note over Server: State = USOCK_Closing
+
+    Note over Server,Client: 13. 连接关闭
+    Note over Server,Client: State = USOCK_Closed
 ```
 
 ### 5.3 超时检测
@@ -733,6 +715,7 @@ void UNetConnection::CheckTimeout()
 ### 6.1 概述
 
 PacketHandler是一个数据包处理框架，支持：
+
 - 加密/解密
 - 压缩/解压
 - 握手协议
@@ -924,12 +907,12 @@ UE_LOG(LogNetTraffic, Verbose, TEXT("Packet received: %d bytes"), Size);
 
 ### 8.3 常见问题排查
 
-| 问题 | 可能原因 | 解决方案 |
-|-----|---------|---------|
-| 连接超时 | 网络不稳定、防火墙 | 检查防火墙设置，增加超时时间 |
-| 高延迟 | 带宽饱和 | 使用stat net查看带宽使用 |
-| 频繁断开 | 超时设置过短 | 调整ConnectionTimeout |
-| 连接数限制 | 达到最大连接数 | 检查MaxClientRate和服务器配置 |
+| 问题       | 可能原因           | 解决方案                      |
+| ---------- | ------------------ | ----------------------------- |
+| 连接超时   | 网络不稳定、防火墙 | 检查防火墙设置，增加超时时间  |
+| 高延迟     | 带宽饱和           | 使用stat net查看带宽使用      |
+| 频繁断开   | 超时设置过短       | 调整ConnectionTimeout         |
+| 连接数限制 | 达到最大连接数     | 检查MaxClientRate和服务器配置 |
 
 ---
 
@@ -959,6 +942,7 @@ UE_LOG(LogNetTraffic, Verbose, TEXT("Packet received: %d bytes"), Size);
 **第三课：通道系统 (Channel)**
 
 将深入讲解：
+
 - UChannel基类实现
 - 通道类型详解
 - 数据束(Bunch)机制
@@ -971,11 +955,13 @@ UE_LOG(LogNetTraffic, Verbose, TEXT("Packet received: %d bytes"), Size);
 ### 练习1：追踪初始化流程
 
 使用调试器追踪以下函数调用链：
+
 ```
 UWorld::Listen → UNetDriver::InitListen → InitBase
 ```
 
 观察：
+
 - Socket是如何创建的
 - 端口是如何绑定的
 - 通道是如何初始化的
@@ -983,6 +969,7 @@ UWorld::Listen → UNetDriver::InitListen → InitBase
 ### 练习2：实现连接监控
 
 创建一个Actor，每秒打印所有客户端连接的统计信息：
+
 - 输入/输出速率
 - 延迟
 - 丢包率
@@ -990,6 +977,7 @@ UWorld::Listen → UNetDriver::InitListen → InitBase
 ### 练习3：配置优化
 
 修改DefaultEngine.ini中的网络配置，观察不同配置对性能的影响：
+
 - 调整NetServerMaxTickRate
 - 修改超时时间
 - 调整带宽限制
@@ -1008,5 +996,5 @@ UWorld::Listen → UNetDriver::InitListen → InitBase
 
 ---
 
-*上一课: [第一课：网络架构概览](./Lesson01_NetworkArchitecture.md)*
-*下一课: [第三课：通道系统](./Lesson03_ChannelSystem.md)*
+_上一课: [第一课：网络架构概览](./Lesson01_NetworkArchitecture.md)_
+_下一课: [第三课：通道系统](./Lesson03_ChannelSystem.md)_

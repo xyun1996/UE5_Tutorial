@@ -613,11 +613,12 @@ void AMyGameMode::MonitorNetworkPerformance()
 **第十一课：网络调试与最佳实践**
 
 将深入讲解：
+
 - 调试工具和命令
 - 常见问题排查
 - 开发最佳实践
 
 ---
 
-*上一课: [第九课：子对象复制](./Lesson09_SubobjectReplication.md)*
-*下一课: [第十一课：网络调试与最佳实践](./Lesson11_DebugAndBestPractices.md)*
+_上一课: [第九课：子对象复制](./Lesson09_SubobjectReplication.md)_
+_下一课: [第十一课：网络调试与最佳实践](./Lesson11_DebugAndBestPractices.md)_

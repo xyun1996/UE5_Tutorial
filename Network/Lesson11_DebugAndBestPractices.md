@@ -561,11 +561,12 @@ void AMyActor::ServerAction_Implementation(int32 Param1, FVector Param2)
 **第十二课：Iris新一代网络系统**
 
 将深入讲解：
+
 - Iris架构概述
 - 与传统系统对比
 - 迁移指南
 
 ---
 
-*上一课: [第十课：网络性能优化](./Lesson10_NetworkOptimization.md)*
-*下一课: [第十二课：Iris新一代网络系统](./Lesson12_Iris.md)*
+_上一课: [第十课：网络性能优化](./Lesson10_NetworkOptimization.md)_
+_下一课: [第十二课：Iris新一代网络系统](./Lesson12_Iris.md)_

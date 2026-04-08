@@ -11,6 +11,7 @@
 ### 1.1 什么是子对象?
 
 子对象是**Actor拥有的、需要独立复制的UObject**，包括：
+
 - UActorComponent（组件）
 - 自定义UObject子类
 - 动态创建的对象
@@ -651,12 +652,12 @@ LogNetSubObject Verbose
 
 ### 8.3 常见问题
 
-| 问题 | 原因 | 解决方案 |
-|-----|------|---------|
+| 问题         | 原因           | 解决方案                   |
+| ------------ | -------------- | -------------------------- |
 | 子对象不同步 | 未注册或未复制 | 确保AddReplicatedSubObject |
-| 客户端崩溃 | 空指针访问 | 检查子对象有效性 |
-| 内存泄漏 | 未正确销毁 | 移除注册并销毁 |
-| RPC不执行 | 无NetOwner | 确保子对象有正确的Owner |
+| 客户端崩溃   | 空指针访问     | 检查子对象有效性           |
+| 内存泄漏     | 未正确销毁     | 移除注册并销毁             |
+| RPC不执行    | 无NetOwner     | 确保子对象有正确的Owner    |
 
 ---
 
@@ -675,11 +676,12 @@ LogNetSubObject Verbose
 **第十课：网络性能优化**
 
 将深入讲解：
+
 - Push Model系统
 - NetDormancy休眠优化
 - 带宽管理
 
 ---
 
-*上一课: [第八课：对象引用与NetGUID系统](./Lesson08_NetGUID.md)*
-*下一课: [第十课：网络性能优化](./Lesson10_NetworkOptimization.md)*
+_上一课: [第八课：对象引用与NetGUID系统](./Lesson08_NetGUID.md)_
+_下一课: [第十课：网络性能优化](./Lesson10_NetworkOptimization.md)_
