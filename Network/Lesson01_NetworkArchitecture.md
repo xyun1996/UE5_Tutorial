@@ -292,35 +292,47 @@ class UChannel : public UObject
 
 ### 3.3 类关系图
 
-```mermaid
-graph TB
-    subgraph NetDriver["UNetDriver"]
-        D1["ClientConnections: TArray&lt;UNetConnection*&gt;"]
-        D2["ServerConnection: UNetConnection*"]
-        D3["Socket: FSocket*"]
-        D4["ReplicationDriver: UReplicationDriver*"]
-    end
-
-    subgraph NetConnection["UNetConnection"]
-        C1["Driver: UNetDriver*"]
-        C2["Channels: TArray&lt;UChannel*&gt;"]
-        C3["PackageMap: UPackageMapClient*"]
-        C4["State: EConnectionState"]
-        C5["RemoteAddr: FInternetAddr"]
-    end
-
-    subgraph Channel["UChannel"]
-        Ch1["Connection: UNetConnection*"]
-        Ch2["ChIndex: int32"]
-        Ch3["InRec / OutRec"]
-    end
-
-    NetDriver -->|"拥有"| NetConnection
-    NetConnection -->|"拥有"| Channel
-
-    Channel --> UControlChannel
-    Channel --> UActorChannel
-    Channel --> UVoiceChannel
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                            UNetDriver                               │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │ - ClientConnections: TArray<UNetConnection*>                  │  │
+│  │ - ServerConnection: UNetConnection* (客户端)                  │  │
+│  │ - Socket: FSocket*                                            │  │
+│  │ - ReplicationDriver: UReplicationDriver*                      │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ 拥有
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                          UNetConnection                             │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │ - Driver: UNetDriver*                                         │  │
+│  │ - Channels: TArray<UChannel*>                                 │  │
+│  │ - PackageMap: UPackageMapClient*                              │  │
+│  │ - State: EConnectionState                                     │  │
+│  │ - RemoteAddr: FInternetAddr                                   │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ 拥有
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                             UChannel                                │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │ - Connection: UNetConnection*                                 │  │
+│  │ - ChIndex: int32                                              │  │
+│  │ - InRec / OutRec (可靠数据缓存)                                │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+          │                    │                    │
+          │ 派生                │ 派生                │ 派生
+          ▼                    ▼                    ▼
+    ┌───────────┐        ┌───────────┐        ┌───────────┐
+    │UControl   │        │UActor     │        │UVoice     │
+    │Channel    │        │Channel    │        │Channel    │
+    └───────────┘        └───────────┘        └───────────┘
 ```
 
 ---
@@ -331,13 +343,25 @@ graph TB
 
 UNetDriver的主要Tick流程分为两个阶段：
 
-```mermaid
-flowchart TD
-    A["Engine Tick"] --> B["TickDispatch()<br/>(接收数据)"]
-    A --> C["TickFlush()<br/>(发送数据)"]
-
-    B --> D["- 接收网络数据包<br/>- 解析数据包<br/>- 分发到对应Connection<br/>- 处理连接握手"]
-    C --> E["- 复制Actors<br/>- 发送RPC<br/>- 组装并发送数据包<br/>- 处理可靠性确认"]
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Engine Tick                                 │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    ▼                               ▼
+        ┌───────────────────────┐       ┌───────────────────────┐
+        │    TickDispatch()     │       │      TickFlush()      │
+        │    (接收数据)          │       │      (发送数据)       │
+        └───────────────────────┘       └───────────────────────┘
+                    │                               │
+                    ▼                               ▼
+        ┌───────────────────────┐       ┌───────────────────────┐
+        │ - 接收网络数据包       │       │ - 复制Actors          │
+        │ - 解析数据包           │       │ - 发送RPC             │
+        │ - 分发到对应Connection │       │ - 组装并发送数据包     │
+        │ - 处理连接握手         │       │ - 处理可靠性确认       │
+        └───────────────────────┘       └───────────────────────┘
 ```
 
 ### 4.2 TickDispatch (接收阶段)
@@ -430,17 +454,17 @@ sequenceDiagram
 | **Packet** | NetConnection之间传输的数据块 | 连接级别 |
 | **Bunch**  | Channel之间传输的数据块       | 通道级别 |
 
-```mermaid
-graph LR
-    subgraph Packet["Packet"]
-        H["Header<br/>(元数据)"]
-        B1["Bunch 1<br/>(Actor A)"]
-        B2["Bunch 2<br/>(Actor B)"]
-        B3["Bunch 3<br/>(RPC)"]
-    end
-
-    H --> B1 --> B2 --> B3
 ```
+┌─────────────────────────────────────────────────────────────────────┐
+│                            Packet                                   │
+│  ┌──────────────┬──────────────┬──────────────┬──────────────┐      │
+│  │   Header     │    Bunch 1   │    Bunch 2   │    Bunch 3   │ ...  │
+│  │  (元数据)    │   (Actor A)  │   (Actor B)  │   (RPC)      │      │
+│  └──────────────┴──────────────┴──────────────┴──────────────┘      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+````
 
 ### 5.2 大数据处理 - Partial Bunch
 
@@ -454,7 +478,7 @@ enum EBunchFlags
     Partial = ...,         // 中间部分
     PartialFinal = ...,    // 最后一个部分
 };
-```
+````
 
 **流程**:
 
@@ -464,9 +488,9 @@ sequenceDiagram
     participant Receiver as 接收端
 
     Note over Sender: 大Bunch需要分割
-    Sender->>Receiver: PartialInitial (第1部分)
-    Sender->>Receiver: Partial (第2部分)
-    Sender->>Receiver: PartialFinal (最后部分)
+    Sender->>Receiver: PartialInitial (第1部分,开始重组)
+    Sender->>Receiver: Partial (第2部分,继续重组)
+    Sender->>Receiver: PartialFinal (最后部分,完成重组)
 
     Receiver->>Receiver: 重组并处理完整Bunch
 ```
